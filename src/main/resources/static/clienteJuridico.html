@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" type="text/css">
+    <title>Pessoa Jurídica</title>
+</head>
+
+<body>
+    <h1>Cadastro Pessoa Jurídica</h1>
+
+    <table>
+        <tr>
+            <td>ID:</td>
+            <td><input type="text" id="txtId"></td>
+        </tr>
+        <tr>
+            <td>CNPJ:</td>
+            <td><input type="text" id="txtCNPJ"></td>
+        </tr>
+        <tr>
+            <td>Email:</td>
+            <td><input type="text" id="txtEmail"></td>
+        </tr>
+        <tr>
+            <td>Nome:</td>
+            <td><input type="text" id="txtNome"></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <input type="button" value="Novo" id="btnNovo" onclick="novo()">
+                <input type="button" value="Salvar" id="btnSalvar" onclick="salvar()">
+                <input type="button" value="Apagar" id="btnApagar" onclick="apagar()">
+                <input type="button" value="Cancelar" id="btnCancelar" onclick="cancelarEdicao()">
+
+            </td>
+        </tr>
+
+        <p style="font-weight: bold;" id="paragrafoMensagem"></p>
+
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>CNPJ</th>
+                <th>Email</th>
+                <th>Nome</th>
+            </tr>
+            <tbody id="corpoTabela"></tbody>
+        </table>
+    </table>
+
+    <script>
+        const corpoTabela = document.querySelector("#corpoTabela")
+        const paragrafoMensagem = document.querySelector("#paragrafoMensagem")
+        const txtId = document.querySelector("#txtId")
+        const txtCNPJ = document.querySelector("#txtCNPJ")
+        const txtEmail = document.querySelector("#txtEmail")
+        const txtNome = document.querySelector("#txtNome")
+
+        const btnNovo = document.querySelector("#btnNovo")
+        const btnSalvar = document.querySelector("#btnSalvar")
+        const btnApagar = document.querySelector("#btnApagar")
+        const btnCancelar = document.querySelector("#btnCancelar")
+
+        var criandoNovo = false
+
+        inicializar();
+
+        function inicializar() {
+            criandoNovo = true
+            paragrafoMensagem.innerHTML = "Pressione o botão Novo ou selecione um professor da lista:"
+            txtId.value = ""
+            txtCNPJ.value = ""
+            txtEmail.value = ""
+            txtNome.value = ""
+
+            txtId.disabled = true
+            txtCNPJ.disabled = true
+            txtEmail.disabled = true
+            txtNome.disabled = true
+
+            btnNovo.disabled = false
+            btnSalvar.disabled = true
+            btnApagar.disabled = true
+            btnCancelar.disabled = true
+
+            listar()
+        }
+
+        async function listar() {
+            const URL = "/api/clienteJuridico"
+
+            fetch(URL)
+                .then(resposta => {
+                    if (!resposta.ok) {
+                        throw Error(resposta.status)
+                    }
+
+                    return resposta
+                })
+                .then(resposta => resposta.json())
+                .then(jsonResponse => preencherTabela(jsonResponse))
+                .catch(function (error) {
+                    paragrafoMensagem.innerHTML = "Erro ao listar clientes (código" + error.message + ")"
+                })
+        }
+
+        function preencherTabela(clientes) {
+            var linhasTabelas = ""
+            var n = clientes.length
+            for (let i = 0; i < n; i++) {
+                var p = clientes[i]
+                linhasTabelas += `<tr>
+                                        <td>
+                                            <a href="javascript:void(0)"
+                                                onclick="selecionar('${p.id}','${p.cnpj}','${p.email}', '${p.nome}')">
+                                                 ${p.id} 
+                                            </a>
+                                        </td>
+                                        <td>  ${p.cnpj}  </td>
+                                        <td>  ${p.email}  </td>
+                                        <td>  ${p.nome}  </td>
+
+                                </tr>`
+                corpoTabela.innerHTML = linhasTabelas
+            }
+        }
+
+        function selecionar(id, cnpj, email, nome) {
+            criandoNovo = false
+            paragrafoMensagem.innerHTML = "Altere e salve os dados do cliente, ou então apague o registro do cliente."
+            txtId.value = id
+            txtCNPJ.value = cnpj
+            txtEmail.value = email
+            txtNome.value = nome
+
+            txtId.disabled = true
+            txtCNPJ.disabled = false
+            txtEmail.disabled = false
+            txtNome.disabled = false
+
+            btnNovo.disabled = true
+            btnSalvar.disabled = false
+            btnApagar.disabled = false
+            btnCancelar.disabled = false
+
+        }
+
+        function novo() {
+            paragrafoMensagem.innerHTML = "Preencha os dados do novo cliente..."
+            criandoNovo = true
+            txtId.value = ""
+            txtCNPJ.value = ""
+            txtEmail.value = ""
+            txtNome.value = ""
+
+            txtId.disabled = true
+            txtCNPJ.disabled = false
+            txtEmail.disabled = false
+            txtNome.disabled = false
+
+            btnNovo.disabled = true
+            btnSalvar.disabled = false
+            btnApagar.disabled = true
+            btnCancelar.disabled = false
+        }
+
+
+        function salvar() {
+            if (criandoNovo) {
+                criar()
+            } else {
+                alterar()
+            }
+        }
+
+        async function criar() {
+            const URL = `/api/clienteJuridico`
+            const dadosCliente = {
+                "cnpj": txtCNPJ.value,
+                "email": txtEmail.value,
+                "nome": txtNome.value,
+            }
+            const postRequest = {
+                method: "POST",
+                body: JSON.stringify(dadosCliente),
+                headers: { "Content-type": "application/json" }
+            }
+
+            fetch(URL, postRequest)
+                .then(resposta => {
+                    if (!resposta.ok) {
+                        throw Error(resposta.status)
+                    }
+                    return resposta
+                })
+                .then(resposta => resposta.json())
+                .then(jsonResponse => inicializar())
+                .catch(function (error) {
+                    paragrafoMensagem.innerHTML = "Erro ao criar novo cliente ( código" + error.message + " )"
+                })
+        }
+
+        async function alterar() {
+            const id = txtId.value
+            const URL = `/api/clienteJuridico/${id}`
+            const dadosCliente = {
+                "id": id,
+                "cnpj": txtCNPJ.value,
+                "email": txtEmail.value,
+                "nome": txtNome.value,
+            }
+            const putRequest = {
+                method: "PUT",
+                body: JSON.stringify(dadosCliente),
+                headers: { "Content-type": "application/json" }
+            }
+
+            fetch(URL, putRequest)
+                .then(resposta => {
+                    if (!resposta.ok) {
+                        throw Error(resposta.status)
+                    }
+                    return resposta
+                })
+                .then(resposta => resposta.json())
+                .then(jsonResponse => inicializar())
+                .catch(function (error) {
+                    paragrafoMensagem.innerHTML = "Erro ao alterar cliente ( código" + error.message + " )"
+                })
+        }
+
+        function cancelarEdicao() {
+            inicializar()
+        }
+
+        async function apagar() {
+            const id = txtId.value
+            const URL = `/api/clienteJuridico/${id}`
+
+            const deleteRequest = {
+                method: "DELETE"
+            }
+
+            fetch(URL, deleteRequest)
+                .then(resposta => {
+                    if (!resposta.ok) {
+                        throw Error(resposta.status)
+                    }
+                    return resposta
+                })
+                .then(resposta => resposta.json())
+                .then(jsonResponse => inicializar())
+                .catch(function (error) {
+                    paragrafoMensagem.innerHTML = "Erro ao apagar cliente ( código" + error.message + " )"
+                })
+        }
+    </script>
+
+
+</body>
+
+</html>
