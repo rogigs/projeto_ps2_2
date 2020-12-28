@@ -8,8 +8,8 @@
 </head>
 
 <body>
-    <h1>Gerenciador de Pessoa Jurídica</h1>
- <p>Integrantes:</p>
+    <h1>Gerenciador de Pedido</h1>
+    <p>Integrantes:</p>
     <ul>
         <li>Igor Gomes - 41994434</li>
         <li>Jose Neco - 41990145</li>
@@ -21,16 +21,24 @@
             <td><input type="text" id="txtId"></td>
         </tr>
         <tr>
-            <td>CNPJ:</td>
-            <td><input type="text" id="txtCNPJ"></td>
+            <td>Item:</td>
+            <td><input type="text" id="txtItem"></td>
         </tr>
         <tr>
-            <td>Email:</td>
-            <td><input type="text" id="txtEmail"></td>
+            <td>Quantidade:</td>
+            <td><input type="text" id="txtQnt"></td>
         </tr>
         <tr>
-            <td>Nome:</td>
-            <td><input type="text" id="txtNome"></td>
+            <td>Preço:</td>
+            <td><input type="text" id="txtPreco"></td>
+        </tr>
+        <tr>
+            <td>Cliente fisico:</td>
+            <td>
+                <select id="selectCliente">
+
+                </select>
+            </td>
         </tr>
         <tr>
             <td></td>
@@ -48,9 +56,11 @@
         <table>
             <tr>
                 <th>ID</th>
-                <th>CNPJ</th>
-                <th>Email</th>
-                <th>Nome</th>
+                <th>Item</th>
+                <th>Quantidade</th>
+                <th>Preço</th>
+                <th>Total</th>
+                <th>Cliente</th>
             </tr>
             <tbody id="corpoTabela"></tbody>
         </table>
@@ -60,9 +70,10 @@
         const corpoTabela = document.querySelector("#corpoTabela")
         const paragrafoMensagem = document.querySelector("#paragrafoMensagem")
         const txtId = document.querySelector("#txtId")
-        const txtCNPJ = document.querySelector("#txtCNPJ")
-        const txtEmail = document.querySelector("#txtEmail")
-        const txtNome = document.querySelector("#txtNome")
+        const txtItem = document.querySelector("#txtItem")
+        const txtQnt = document.querySelector("#txtQnt")
+        const txtPreco = document.querySelector("#txtPreco")
+        const selectCliente = document.querySelector('#selectCliente');
 
         const btnNovo = document.querySelector("#btnNovo")
         const btnSalvar = document.querySelector("#btnSalvar")
@@ -74,28 +85,34 @@
         inicializar();
 
         function inicializar() {
+
             criandoNovo = true
-            paragrafoMensagem.innerHTML = "Pressione o botão Novo ou selecione um professor da lista:"
+            paragrafoMensagem.innerHTML = "Pressione o botão Novo ou selecione um pedido da lista:"
             txtId.value = ""
-            txtCNPJ.value = ""
-            txtEmail.value = ""
-            txtNome.value = ""
+            txtItem.value = ""
+            txtQnt.value = ""
+            txtPreco.value = ""
+
+            selectCliente.disabled = true;
+            carregarClientesFisico();
+            selectCliente.selectedIndex = -1;
 
             txtId.disabled = true
-            txtCNPJ.disabled = true
-            txtEmail.disabled = true
-            txtNome.disabled = true
+            txtItem.disabled = true
+            txtQnt.disabled = true
+            txtPreco.disabled = true
 
             btnNovo.disabled = false
             btnSalvar.disabled = true
             btnApagar.disabled = true
             btnCancelar.disabled = true
 
+
             listar()
         }
 
         async function listar() {
-            const URL = "/api/clienteJuridico"
+            const URL = "/api/pedido"
 
             fetch(URL)
                 .then(resposta => {
@@ -108,7 +125,7 @@
                 .then(resposta => resposta.json())
                 .then(jsonResponse => preencherTabela(jsonResponse))
                 .catch(function (error) {
-                    paragrafoMensagem.innerHTML = "Erro ao listar clientes (código" + error.message + ")"
+                    paragrafoMensagem.innerHTML = "Erro ao listar pedidos (código" + error.message + ")"
                 })
         }
 
@@ -117,34 +134,38 @@
             var n = clientes.length
             for (let i = 0; i < n; i++) {
                 var p = clientes[i]
+
                 linhasTabelas += `<tr>
                                         <td>
                                             <a href="javascript:void(0)"
-                                                onclick="selecionar('${p.id}','${p.cnpj}','${p.email}', '${p.nome}')">
+                                                onclick="selecionar('${p.id}','${p.item}','${p.quantidade}', '${p.preco}', '${p.clienteFisico.id}')">
                                                  ${p.id} 
                                             </a>
                                         </td>
-                                        <td>  ${p.cnpj}  </td>
-                                        <td>  ${p.email}  </td>
-                                        <td>  ${p.nome}  </td>
-
+                                        <td>  ${p.item}  </td>
+                                        <td>  ${p.quantidade}  </td>
+                                        <td>  ${p.preco}  </td>
+                                        <td>  ${p.total}  </td>
+                                        <td>  ${p.clienteFisico.cpf} - ${p.clienteFisico.nome} </td>
                                 </tr>`
                 corpoTabela.innerHTML = linhasTabelas
             }
         }
 
-        function selecionar(id, cnpj, email, nome) {
+        function selecionar(id, item, quantidade, preco, clienteId) {
             criandoNovo = false
-            paragrafoMensagem.innerHTML = "Altere e salve os dados do cliente, ou então apague o registro do cliente."
+            paragrafoMensagem.innerHTML = "Altere e salve os dados do pedido, ou então apague o registro do cliente."
             txtId.value = id
-            txtCNPJ.value = cnpj
-            txtEmail.value = email
-            txtNome.value = nome
+            txtItem.value = item
+            txtQnt.value = quantidade
+            txtPreco.value = preco
+            selectCliente.value = clienteId;
 
             txtId.disabled = true
-            txtCNPJ.disabled = false
-            txtEmail.disabled = false
-            txtNome.disabled = false
+            txtItem.disabled = false
+            txtQnt.disabled = false
+            txtPreco.disabled = false
+            selectCliente.disabled = false
 
             btnNovo.disabled = true
             btnSalvar.disabled = false
@@ -154,17 +175,19 @@
         }
 
         function novo() {
-            paragrafoMensagem.innerHTML = "Preencha os dados do novo cliente..."
+            paragrafoMensagem.innerHTML = "Preencha os dados do novo pedido..."
             criandoNovo = true
             txtId.value = ""
-            txtCNPJ.value = ""
-            txtEmail.value = ""
-            txtNome.value = ""
+            txtItem.value = ""
+            txtQnt.value = ""
+            txtPreco.value = ""
+            selectCliente.selectedIndex = -1;
 
             txtId.disabled = true
-            txtCNPJ.disabled = false
-            txtEmail.disabled = false
-            txtNome.disabled = false
+            txtItem.disabled = false
+            txtQnt.disabled = false
+            txtPreco.disabled = false
+            selectCliente.disabled = false
 
             btnNovo.disabled = true
             btnSalvar.disabled = false
@@ -182,15 +205,19 @@
         }
 
         async function criar() {
-            const URL = `/api/clienteJuridico`
-            const dadosCliente = {
-                "cnpj": txtCNPJ.value,
-                "email": txtEmail.value,
-                "nome": txtNome.value,
+
+            const URL = `/api/clienteFisico/${selectCliente.value}/pedido`
+            const dadosPedido = {
+                "item": txtItem.value,
+                "quantidade": txtQnt.value,
+                "preco": txtPreco.value,
+                "total": txtQnt.value * txtPreco.value
             }
+
+
             const postRequest = {
                 method: "POST",
-                body: JSON.stringify(dadosCliente),
+                body: JSON.stringify(dadosPedido),
                 headers: { "Content-type": "application/json" }
             }
 
@@ -204,22 +231,23 @@
                 .then(resposta => resposta.json())
                 .then(jsonResponse => inicializar())
                 .catch(function (error) {
-                    paragrafoMensagem.innerHTML = "Erro ao criar novo cliente ( código" + error.message + " )"
+                    paragrafoMensagem.innerHTML = "Erro ao criar novo pedido ( código" + error.message + " )"
                 })
         }
 
         async function alterar() {
             const id = txtId.value
-            const URL = `/api/clienteJuridico/${id}`
-            const dadosCliente = {
+            const URL = `/api/clienteFisico/${selectCliente.value}/pedido/${id}`
+            const dadosPedido = {
                 "id": id,
-                "cnpj": txtCNPJ.value,
-                "email": txtEmail.value,
-                "nome": txtNome.value,
+                "item": txtItem.value,
+                "quantidade": txtQnt.value,
+                "preco": txtPreco.value,
+                "total": txtQnt.value * txtPreco.value
             }
             const putRequest = {
                 method: "PUT",
-                body: JSON.stringify(dadosCliente),
+                body: JSON.stringify(dadosPedido),
                 headers: { "Content-type": "application/json" }
             }
 
@@ -233,7 +261,7 @@
                 .then(resposta => resposta.json())
                 .then(jsonResponse => inicializar())
                 .catch(function (error) {
-                    paragrafoMensagem.innerHTML = "Erro ao alterar cliente ( código" + error.message + " )"
+                    paragrafoMensagem.innerHTML = "Erro ao alterar pedido ( código" + error.message + " )"
                 })
         }
 
@@ -243,7 +271,7 @@
 
         async function apagar() {
             const id = txtId.value
-            const URL = `/api/clienteJuridico/${id}`
+            const URL = `/api/pedido/${id}`
 
             const deleteRequest = {
                 method: "DELETE"
@@ -259,9 +287,30 @@
                 .then(resposta => resposta.json())
                 .then(jsonResponse => inicializar())
                 .catch(function (error) {
-                    paragrafoMensagem.innerHTML = "Erro ao apagar cliente ( código" + error.message + " )"
+                    paragrafoMensagem.innerHTML = "Erro ao apagar pedido ( código" + error.message + " )"
                 })
         }
+
+        async function carregarClientesFisico() {
+            const URL = `/api/clienteFisico`;
+            fetch(URL)
+                .then(resposta => { if (!resposta.ok) throw Error(resposta.status); return resposta; })
+                .then(resposta => resposta.json())
+                .then(jsonResponse => preencherselectClientes(jsonResponse))
+                .catch(function (error) { paragrafoMensagem.innerHTML = "Erro ao carregar clienteFisico (código " + error.message + ")"; });
+        }
+
+        function preencherselectClientes(clientes) {
+            var opcoes = ""
+            var n = clientes.length;
+            for (var i = 0; i < n; i++) {
+                var p = clientes[i];
+                opcoes += `<option value="${p.id}">${p.nome} - ${p.cpf}</option>`
+            }
+
+            selectCliente.innerHTML = opcoes;
+        }
+
     </script>
 
 
